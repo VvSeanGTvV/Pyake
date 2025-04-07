@@ -45,16 +45,16 @@ class SnakeHead(pygame.sprite.Sprite):
         self.rect.y = y * GRID_SIZE
         self.direction = Direction.RIGHT
         self.next_direction = Direction.RIGHT
-        
+
     def update(self):
         # Update direction
         self.direction = self.next_direction
-        
+
         # Move head
         dx, dy = self.direction.value
         self.rect.x += dx * GRID_SIZE
         self.rect.y += dy * GRID_SIZE
-        
+
         # Wrap around screen
         if self.rect.x >= SCREEN_WIDTH:
             self.rect.x = 0
@@ -64,13 +64,13 @@ class SnakeHead(pygame.sprite.Sprite):
             self.rect.y = 0
         elif self.rect.y < 0:
             self.rect.y = SCREEN_HEIGHT - GRID_SIZE
-            
+
     def change_direction(self, new_direction):
         # Prevent 180-degree turns
         if (new_direction == Direction.UP and self.direction != Direction.DOWN or
-            new_direction == Direction.DOWN and self.direction != Direction.UP or
-            new_direction == Direction.LEFT and self.direction != Direction.RIGHT or
-            new_direction == Direction.RIGHT and self.direction != Direction.LEFT):
+                new_direction == Direction.DOWN and self.direction != Direction.UP or
+                new_direction == Direction.LEFT and self.direction != Direction.RIGHT or
+                new_direction == Direction.RIGHT and self.direction != Direction.LEFT):
             self.next_direction = new_direction
 
 class SnakeBody(pygame.sprite.Sprite):
@@ -98,7 +98,7 @@ class Food(pygame.sprite.Sprite):
         self.image.fill(RED)
         self.rect = self.image.get_rect()
         self.spawn()
-        
+
     def spawn(self):
         self.rect.x = random.randint(0, GRID_WIDTH - 1) * GRID_SIZE
         self.rect.y = random.randint(0, GRID_HEIGHT - 1) * GRID_SIZE
@@ -112,24 +112,24 @@ class Enemy(pygame.sprite.Sprite):
         self.spawn()
         self.direction = random.choice(list(Direction))
         self.move_counter = 0
-        
+
     def spawn(self):
         self.rect.x = random.randint(0, GRID_WIDTH - 1) * GRID_SIZE
         self.rect.y = random.randint(0, GRID_HEIGHT - 1) * GRID_SIZE
-        
+
     def update(self, snake_head):
         self.move_counter += 1
-        
+
         # Change direction occasionally or when at edge
         if self.move_counter >= 5 or random.random() < 0.1:
             self.direction = self.choose_direction(snake_head)
             self.move_counter = 0
-            
+
         # Move in current direction
         dx, dy = self.direction.value
         self.rect.x += dx * GRID_SIZE
         self.rect.y += dy * GRID_SIZE
-        
+
         # Wrap around screen
         if self.rect.x >= SCREEN_WIDTH:
             self.rect.x = 0
@@ -139,11 +139,11 @@ class Enemy(pygame.sprite.Sprite):
             self.rect.y = 0
         elif self.rect.y < 0:
             self.rect.y = SCREEN_HEIGHT - GRID_SIZE
-    
+
     def choose_direction(self, snake_head):
         # Student-developed procedure that uses a list and selection
         directions = list(Direction)
-        
+
         # Calculate distance to snake head for each possible direction
         distances = []
         for direction in directions:
@@ -151,11 +151,11 @@ class Enemy(pygame.sprite.Sprite):
             new_y = self.rect.y + direction.value[1] * GRID_SIZE
             dist = abs(new_x - snake_head.rect.x) + abs(new_y - snake_head.rect.y)
             distances.append(dist)
-        
+
         # Choose direction that minimizes distance to snake (attack behavior)
         min_dist = min(distances)
         best_directions = [directions[i] for i, d in enumerate(distances) if d == min_dist]
-        
+
         # Randomly select among best directions to avoid always same path
         return random.choice(best_directions)
 
@@ -171,18 +171,18 @@ class Wall(pygame.sprite.Sprite):
 class Snake:
     def __init__(self):
         self.reset()
-        
+
     def reset(self):
         # Create sprite groups
         self.all_sprites = pygame.sprite.Group()
         self.snake_sprites = pygame.sprite.Group()
-        
+
         # Create snake head
         start_x, start_y = GRID_WIDTH // 2, GRID_HEIGHT // 2
         self.head = SnakeHead(start_x, start_y)
         self.all_sprites.add(self.head)
         self.snake_sprites.add(self.head)
-        
+
         # Create initial body segments
         self.body_segments = []
         for i in range(1, 3):  # Start with 2 body segments
@@ -190,34 +190,36 @@ class Snake:
             self.body_segments.append(segment)
             self.all_sprites.add(segment)
             self.snake_sprites.add(segment)
-            
+
         # Create tail
         self.tail = SnakeTail(start_x - 3, start_y)
         self.all_sprites.add(self.tail)
         self.snake_sprites.add(self.tail)
-        
+
         self.grow = False
-        
+
     def update(self):
         # Save previous positions
-        prev_positions = [(self.head.rect.x, self.head.rect.y)]
+        prev_head_pos = (self.head.rect.x, self.head.rect.y)
+        prev_positions = [prev_head_pos]
         for segment in self.body_segments:
             prev_positions.append((segment.rect.x, segment.rect.y))
         prev_tail_pos = (self.tail.rect.x, self.tail.rect.y)
-        
+
         # Update head
         self.head.update()
-        
-        # Check for collisions with body
-        if pygame.sprite.spritecollide(self.head, self.snake_sprites, False):
-            # Don't count collision with self as game over right after spawning
+
+        # Check for collisions with body (excluding the head's previous position)
+        # Create a temporary group without the segments that will move
+        collision_check_group = pygame.sprite.Group(self.body_segments[1:] + [self.tail])
+        if pygame.sprite.spritecollide(self.head, collision_check_group, False):
             if len(self.body_segments) > 2:
                 return True  # Game over
-        
+
         # Update body segments
         for i, segment in enumerate(self.body_segments):
             segment.rect.x, segment.rect.y = prev_positions[i]
-        
+
         # Update tail
         if self.grow:
             # Add new body segment at tail position
@@ -228,12 +230,12 @@ class Snake:
             self.grow = False
         else:
             self.tail.rect.x, self.tail.rect.y = prev_positions[-1]
-        
+
         return False  # Game continues
-        
+
     def change_direction(self, direction):
         self.head.change_direction(direction)
-        
+
     def check_collision_with_food(self, food):
         if pygame.sprite.collide_rect(self.head, food):
             self.grow = True
@@ -243,7 +245,7 @@ class Snake:
 def create_walls():
     # Student-developed procedure that creates walls and returns them as a list
     walls = []
-    
+
     # Border walls
     for x in range(GRID_WIDTH):
         walls.append(Wall(x, 0))
@@ -251,13 +253,13 @@ def create_walls():
     for y in range(1, GRID_HEIGHT - 1):
         walls.append(Wall(0, y))
         walls.append(Wall(GRID_WIDTH - 1, y))
-    
+
     # Some random inner walls
     for _ in range(5):
         x = random.randint(5, GRID_WIDTH - 6)
         y = random.randint(5, GRID_HEIGHT - 6)
         length = random.randint(3, 7)
-        
+
         # Randomly choose horizontal or vertical wall
         if random.random() < 0.5:
             for i in range(length):
@@ -267,7 +269,7 @@ def create_walls():
             for i in range(length):
                 if y + i < GRID_HEIGHT - 1:
                     walls.append(Wall(x, y + i))
-    
+
     return walls
 
 def draw_grid():
@@ -278,11 +280,12 @@ def draw_grid():
 
 def show_game_over():
     font = pygame.font.SysFont('Arial', 36)
+    screen.fill(BLACK)
     text = font.render("Game Over! Press R to restart", True, WHITE)
     text_rect = text.get_rect(center=(SCREEN_WIDTH//2, SCREEN_HEIGHT//2))
     screen.blit(text, text_rect)
     pygame.display.flip()
-    
+
     waiting = True
     while waiting:
         for event in pygame.event.get():
@@ -301,39 +304,41 @@ def main():
     food = Food()
     enemy = Enemy()
     walls = create_walls()  # Call to student-developed procedure
-    
+
     all_sprites = pygame.sprite.Group()
     all_sprites.add(snake.all_sprites)
     all_sprites.add(food)
     all_sprites.add(enemy)
     for wall in walls:  # Use of the list
         all_sprites.add(wall)
-    
+
     wall_sprites = pygame.sprite.Group(walls)  # Create a group for walls
-    
+
     running = True
     game_over = False
-    
+
     while running:
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_r]:
+            if game_over:
+                snake.reset()
+                food.spawn()
+                enemy.spawn()
+                walls = create_walls()  # Regenerate walls
+                all_sprites = pygame.sprite.Group()
+                all_sprites.add(snake.all_sprites)
+                all_sprites.add(food)
+                all_sprites.add(enemy)
+                for wall in walls:
+                    all_sprites.add(wall)
+                wall_sprites = pygame.sprite.Group(walls)
+                game_over = False
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-            elif event.type == pygame.KEYDOWN:
-                if game_over:
-                    if event.key == pygame.K_r:
-                        snake.reset()
-                        food.spawn()
-                        enemy.spawn()
-                        walls = create_walls()  # Regenerate walls
-                        all_sprites = pygame.sprite.Group()
-                        all_sprites.add(snake.all_sprites)
-                        all_sprites.add(food)
-                        all_sprites.add(enemy)
-                        for wall in walls:
-                            all_sprites.add(wall)
-                        wall_sprites = pygame.sprite.Group(walls)
-                        game_over = False
-                else:
+            if event.type == pygame.KEYDOWN:
+                if not game_over:
                     if event.key == pygame.K_UP:
                         snake.change_direction(Direction.UP)
                     elif event.key == pygame.K_DOWN:
@@ -342,31 +347,31 @@ def main():
                         snake.change_direction(Direction.LEFT)
                     elif event.key == pygame.K_RIGHT:
                         snake.change_direction(Direction.RIGHT)
-        
+
         if not game_over:
             # Update
             game_over = snake.update()
-            
+
             # Update enemy (with AI targeting the snake head)
             enemy.update(snake.head)
-            
+
             # Check for collisions with walls
             if pygame.sprite.spritecollide(snake.head, wall_sprites, False):
                 game_over = True
-            
+
             # Check for collisions with enemy
             if pygame.sprite.collide_rect(snake.head, enemy):
                 game_over = True
-            
+
             # Check for food collision
             if snake.check_collision_with_food(food):
                 food.spawn()
                 # Make sure food doesn't spawn on snake, enemy, or walls
-                while (pygame.sprite.spritecollide(food, snake.snake_sprites, False) or 
-                       pygame.sprite.collide_rect(food, enemy) or 
+                while (pygame.sprite.spritecollide(food, snake.snake_sprites, False) or
+                       pygame.sprite.collide_rect(food, enemy) or
                        pygame.sprite.spritecollide(food, wall_sprites, False)):
                     food.spawn()
-            
+
             # Draw
             screen.fill(BLACK)
             draw_grid()
@@ -374,9 +379,9 @@ def main():
             pygame.display.flip()
         else:
             show_game_over()
-        
+
         clock.tick(FPS)
-    
+
     pygame.quit()
     sys.exit()
 
