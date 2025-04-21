@@ -7,12 +7,12 @@ from enum import Enum
 pygame.init()
 
 # Constants
-SCREEN_WIDTH = 600
-SCREEN_HEIGHT = 600
-GRID_SIZE = 20
-GRID_WIDTH = SCREEN_WIDTH // GRID_SIZE
-GRID_HEIGHT = SCREEN_HEIGHT // GRID_SIZE
-FPS = 10
+SCREEN_WIDTH = 600 # Resolution of the Game. (# of Pixel in Width)
+SCREEN_HEIGHT = 600 # Resolution of the Game. (# of Pixel in Height)
+GRID_SIZE = 20 # Grid Size for the Grid Map and used for all sprites
+GRID_WIDTH = SCREEN_WIDTH // GRID_SIZE # Grid Width
+GRID_HEIGHT = SCREEN_HEIGHT // GRID_SIZE # Grid Height
+FPS = 10 # FPS Capped for the game
 
 # Colors
 BLACK = (0, 0, 0)
@@ -31,9 +31,9 @@ class Direction(Enum):
     RIGHT = (1, 0)
 
 # Create the screen
-screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-pygame.display.set_caption("Snake Game")
-clock = pygame.time.Clock()
+screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT)) # Creates the window enviroment.
+pygame.display.set_caption("Snake Game") # Set the window title
+clock = pygame.time.Clock() # Get clock.
 
 class SnakeHead(pygame.sprite.Sprite):
     def __init__(self, x, y):
@@ -408,9 +408,13 @@ def main():
                        pygame.sprite.spritecollide(food, wall_sprites, False)):
                     food.spawn()
 
-            screen.fill(BLACK)
-            draw_grid()
+            screen.fill(BLACK) # Always make the background BLACK or any color
+            #draw_grid() # Draws grid (usually for debugging purpose).
             all_sprites.draw(screen)
+
+            all_sprites.remove(snake.all_sprites) # ENSURE all sprite is updated including body!
+            all_sprites.add(snake.all_sprites)
+
             pygame.display.flip()
         elif game_over:
             show_game_over()
