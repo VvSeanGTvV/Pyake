@@ -190,7 +190,7 @@ class EnemySnake:
     def reset(self):
         self.all_sprites = pygame.sprite.Group()
         self.enemy_sprites = pygame.sprite.Group()
-
+        
         start_x, start_y = random.randint(5, GRID_WIDTH-5), random.randint(5, GRID_HEIGHT-5)
         self.head = SnakeHead(start_x, start_y, PURPLE)
         self.all_sprites.add(self.head)
@@ -245,7 +245,7 @@ class EnemySnake:
             next_pos = self.path[self.path_counter]
             dx = next_pos[0] - (self.head.rect.x // GRID_SIZE)
             dy = next_pos[1] - (self.head.rect.y // GRID_SIZE)
-
+            
             if dx == 1:
                 self.next_direction = Direction.RIGHT
             elif dx == -1:
@@ -254,7 +254,7 @@ class EnemySnake:
                 self.next_direction = Direction.DOWN
             elif dy == -1:
                 self.next_direction = Direction.UP
-
+                
             self.path_counter += 1
 
         # Update head direction
@@ -287,38 +287,38 @@ class EnemySnake:
     def find_path_to_target(self, target, walls):
         start = (self.head.rect.x // GRID_SIZE, self.head.rect.y // GRID_SIZE)
         goal = (target.rect.x // GRID_SIZE, target.rect.y // GRID_SIZE)
-
+        
         # Create a grid representation
         grid = [[0 for _ in range(GRID_WIDTH)] for _ in range(GRID_HEIGHT)]
-
+        
         # Mark walls
         for wall in walls:
             x, y = wall.rect.x // GRID_SIZE, wall.rect.y // GRID_SIZE
             grid[y][x] = 1
-
+            
         # Mark own body (except tail which will move)
         for segment in self.body_segments[:-1]:
             x, y = segment.rect.x // GRID_SIZE, segment.rect.y // GRID_SIZE
             grid[y][x] = 1
-
+        
         # Simple BFS pathfinding
         queue = deque()
         queue.append(start)
         came_from = {}
         came_from[start] = None
-
+        
         found = False
         while queue:
             current = queue.popleft()
-
+            
             if current == goal:
                 found = True
                 break
-
+                
             for direction in Direction:
                 dx, dy = direction.value
                 neighbor = (current[0] + dx, current[1] + dy)
-
+                
                 # Wrap around screen
                 if neighbor[0] < 0:
                     neighbor = (GRID_WIDTH - 1, neighbor[1])
@@ -328,15 +328,15 @@ class EnemySnake:
                     neighbor = (neighbor[0], GRID_HEIGHT - 1)
                 elif neighbor[1] >= GRID_HEIGHT:
                     neighbor = (neighbor[0], 0)
-
-                if (neighbor not in came_from and
-                        0 <= neighbor[0] < GRID_WIDTH and
-                        0 <= neighbor[1] < GRID_HEIGHT and
-                        grid[neighbor[1]][neighbor[0]] == 0):
-
+                
+                if (neighbor not in came_from and 
+                    0 <= neighbor[0] < GRID_WIDTH and 
+                    0 <= neighbor[1] < GRID_HEIGHT and 
+                    grid[neighbor[1]][neighbor[0]] == 0):
+                    
                     queue.append(neighbor)
                     came_from[neighbor] = current
-
+        
         # Reconstruct path if found
         self.path = []
         if found:
@@ -353,7 +353,7 @@ class EnemySnake:
         for direction in Direction:
             new_x = self.head.rect.x + direction.value[0] * GRID_SIZE
             new_y = self.head.rect.y + direction.value[1] * GRID_SIZE
-
+            
             # Wrap around screen
             if new_x >= SCREEN_WIDTH:
                 new_x = 0
@@ -363,24 +363,24 @@ class EnemySnake:
                 new_y = 0
             elif new_y < 0:
                 new_y = SCREEN_HEIGHT - GRID_SIZE
-
+                
             # Check wall collisions
             wall_collision = False
             for wall in walls:
                 if new_x == wall.rect.x and new_y == wall.rect.y:
                     wall_collision = True
                     break
-
+            
             # Check body collisions (except tail)
             body_collision = False
             for segment in self.body_segments[:-1]:
                 if new_x == segment.rect.x and new_y == segment.rect.y:
                     body_collision = True
                     break
-
+            
             if not wall_collision and not body_collision:
                 safe_directions.append(direction)
-
+        
         # Choose a random safe direction if available
         if safe_directions:
             # Prefer to continue in same direction if safe
@@ -455,7 +455,8 @@ def show_menu():
 
     # Buttons
     play_button = draw_button("PLAY VS AI", 36, GREEN, BLACK, SCREEN_WIDTH//2, SCREEN_HEIGHT//2, 200, 50)
-    watch_button = draw_button("WATCH AI BATTLE", 36, PURPLE, BLACK, SCREEN_WIDTH//2, SCREEN_HEIGHT//2 + 80, 250, 50)
+    # watch_button = draw_button("WATCH AI BATTLE", 36, PURPLE, BLACK, SCREEN_WIDTH//2, SCREEN_HEIGHT//2 + 80, 250, 50)
+    # broke as far as I know of
     quit_button = draw_button("QUIT", 36, RED, BLACK, SCREEN_WIDTH//2, SCREEN_HEIGHT//2 + 160, 150, 50)
 
     pygame.display.flip()
@@ -485,7 +486,7 @@ def show_game_over(winner=None):
             draw_text("ENEMY WINS!", 48, PURPLE, SCREEN_WIDTH//2, SCREEN_HEIGHT//3)
     else:
         draw_text("GAME OVER", 48, RED, SCREEN_WIDTH//2, SCREEN_HEIGHT//3)
-
+    
     draw_text("Press R to return to menu", 36, WHITE, SCREEN_WIDTH//2, SCREEN_HEIGHT//2)
     draw_text("Press Q to quit", 36, WHITE, SCREEN_WIDTH//2, SCREEN_HEIGHT//2 + 50)
 
@@ -503,6 +504,25 @@ def show_game_over(winner=None):
                 elif event.key == pygame.K_q:
                     pygame.quit()
                     sys.exit()
+
+def show_start_message():
+    screen.fill(BLACK)
+    draw_text("Press any arrow key to start", 36, WHITE, SCREEN_WIDTH//2, SCREEN_HEIGHT//2)
+    pygame.display.flip()
+    
+    waiting = True
+    while waiting:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.KEYDOWN:
+                if event.key in (pygame.K_UP, pygame.K_DOWN, pygame.K_LEFT, pygame.K_RIGHT):
+                    waiting = False
+                elif event.key == pygame.K_q:
+                    pygame.quit()
+                    sys.exit()
+        pygame.time.Clock().tick(FPS)
 
 def game_loop(mode):
     snake = Snake()
@@ -523,6 +543,13 @@ def game_loop(mode):
     game_over = False
     player_score = 0
     enemy_score = 0
+    game_started = False
+
+    # Show initial game screen
+    screen.fill(BLACK)
+    all_sprites.draw(screen)
+    draw_text("Press any arrow key to start", 36, WHITE, SCREEN_WIDTH//2, SCREEN_HEIGHT//2)
+    pygame.display.flip()
 
     while running:
         for event in pygame.event.get():
@@ -537,7 +564,16 @@ def game_loop(mode):
                     elif event.key == pygame.K_q:
                         pygame.quit()
                         sys.exit()
-                elif mode == "play":
+                elif not game_started and mode == "play":
+                    if event.key in (pygame.K_UP, pygame.K_DOWN, pygame.K_LEFT, pygame.K_RIGHT):
+                        game_started = True
+                        snake.change_direction({
+                            pygame.K_UP: Direction.UP,
+                            pygame.K_DOWN: Direction.DOWN,
+                            pygame.K_LEFT: Direction.LEFT,
+                            pygame.K_RIGHT: Direction.RIGHT
+                        }[event.key])
+                elif mode == "play" and game_started:
                     if event.key == pygame.K_UP:
                         snake.change_direction(Direction.UP)
                     elif event.key == pygame.K_DOWN:
@@ -548,6 +584,9 @@ def game_loop(mode):
                         snake.change_direction(Direction.RIGHT)
 
         if not game_over:
+            if not game_started:
+                continue
+
             # Update player snake if in play mode
             if mode == "play":
                 game_over = snake.update()
